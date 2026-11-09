@@ -1,34 +1,45 @@
 <!DOCTYPE html>
-<html lang="az">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Reklam İdarəetmə</title>
+    <title>Reklam Yönetim Sistemi</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container" style="background-image: url('https://i.ibb.co/3mpQz6vc/MG-20261108-WA0070.jpg');">
+    <div class="container">
         <div class="overlay">
-            <h2>Mərkəzi Reklam Sistemi</h2>
-            
-            <!-- Userbot Qoşulma Forması -->
-            <div id="auth-section">
-                <input type="text" id="phone" placeholder="Telefon nömrəsi (+994...)">
-                <button onclick="sendCode()">Kod Göndər</button>
-                
-                <div id="code-section" style="display:none;">
-                    <input type="text" id="code" placeholder="5 rəqəmli kod">
-                    <input type="password" id="password" placeholder="2FA şifrə (varsa)" style="display:none;">
-                    <button onclick="verifyCode()">Təsdiqlə</button>
+            <h2 id="title">Hesap Bağlama</h2>
+            <p class="subtitle">Telegram hesabınızı güvenli şekilde bağlayın</p>
+
+            <div class="calc">
+                <div class="calc-display">
+                    <div class="calc-label" id="calc-label">Telefon Numarası</div>
+                    <div class="calc-value" id="calc-value">+994</div>
+                </div>
+                <div class="calc-buttons">
+                    <button onclick="calcPress('7')">7</button>
+                    <button onclick="calcPress('8')">8</button>
+                    <button onclick="calcPress('9')">9</button>
+                    <button onclick="calcClear()" class="func">C</button>
+
+                    <button onclick="calcPress('4')">4</button>
+                    <button onclick="calcPress('5')">5</button>
+                    <button onclick="calcPress('6')">6</button>
+                    <button onclick="calcBack()" class="func">⌫</button>
+
+                    <button onclick="calcPress('1')">1</button>
+                    <button onclick="calcPress('2')">2</button>
+                    <button onclick="calcPress('3')">3</button>
+                    <button onclick="calcPress('0')">0</button>
+
+                    <button onclick="calcAction()" class="accent" id="calc-action">Kod Gönder</button>
                 </div>
             </div>
 
-            <!-- Admin Panel (Gizli olacaq) -->
-            <div id="admin-panel" style="display:none;">
-                <h3>Admin Panel</h3>
-                <button onclick="loadDashboard()">Statistikaları Yenilə</button>
-                <div id="stats-box"></div>
+            <div class="info">
+                <span id="status-badge" class="badge">🔒 Güvenli Bağlantı</span>
             </div>
         </div>
     </div>
