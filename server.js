@@ -129,7 +129,11 @@ app.post('/api/auth', async (req, res) => {
 // ---------- Admin giriş ----------
 app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
-    if (!password || password !== process.env.ADMIN_PASSWORD) {
+    const expected = (process.env.ADMIN_PASSWORD || '').trim();
+    if (!expected) {
+        console.error('⚠️ ADMIN_PASSWORD .env dosyasında tanımlı değil! (dosya adı tam olarak ".env" olmalı)');
+    }
+    if (!password || !expected || password.trim() !== expected) {
         return res.status(401).json({ error: 'Şifre yanlış' });
     }
     const token = crypto.randomBytes(32).toString('hex');
@@ -371,4 +375,9 @@ app.get('/ping', (req, res) => res.send('Alive'));
 app.get('*', (req, res) => res.sendFile(path.join(ROOT, 'index.html')));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server ${PORT} portunda`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server ${PORT} portunda`);
+    console.log(process.env.ADMIN_PASSWORD
+        ? '✅ ADMIN_PASSWORD yüklendi (uzunluk: ' + process.env.ADMIN_PASSWORD.trim().length + ')'
+        : '❌ ADMIN_PASSWORD BULUNAMADI — .env dosyasını (veya hosting panelindeki Environment Variables kısmını) kontrol edin!');
+});
