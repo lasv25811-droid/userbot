@@ -15,7 +15,9 @@ const db = admin.firestore();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// 🟢 DİQQƏT: Artıq 'public' qovluğu yoxdur, birbaşa kök qovluğu oxuyur
+app.use(express.static(path.join(__dirname))); 
 
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
@@ -65,7 +67,6 @@ app.post('/api/userbot/send-code', async (req, res) => {
     try {
         const { phone } = req.body;
         const sessionInfo = await startUserbotLogin(phone);
-        // Sessiya məlumatını müvəqqəti olaraq yadda saxlayırıq (realda Redis və ya DB-də tutulmalıdır)
         res.json({ success: true, message: "Kod göndərildi", phoneHash: sessionInfo.phoneCodeHash });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -78,7 +79,6 @@ app.post('/api/userbot/verify', async (req, res) => {
         const { phone, code, phoneCodeHash, userId } = req.body;
         const sessionString = await verifyUserbotCode(phone, code, phoneCodeHash);
         
-        // Sessiyanı Firebase-ə yazırıq
         await db.collection('accounts').add({
             userId: userId,
             phone: phone,
@@ -103,7 +103,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
 // 🟢 Cron Job Ping (Render yatmasın deyə)
 app.get('/ping', (req, res) => res.send('Alive'));
 
-// Bütün digər sorğuları Frontend-ə yönləndir (Single Page Application)
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// 🟢 DİQQƏT: Bütün digər sorğuları birbaşa kökdəki index.html-ə yönləndirir
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.listen(process.env.PORT, () => console.log(`Server ${process.env.PORT} portunda işləyir`));
