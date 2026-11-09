@@ -7,14 +7,29 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ---------- Firebase ----------
+function normalizePrivateKey(key) {
+    if (!key) return key;
+    key = String(key).replace(/\\n/g, '\n').replace(/\r/g, '').trim();
+    const m = key.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+    if (!m) return key;
+    const body = m[1].replace(/[^A-Za-z0-9+/=]/g, '');
+    const lines = body.match(/.{1,64}/g) || [];
+    return '-----BEGIN PRIVATE KEY-----\n' + lines.join('\n') + '\n-----END PRIVATE KEY-----\n';
+}
+
 let serviceAccount;
 try {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    if (serviceAccount.private_key) {
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    let raw = (process.env.FIREBASE_SERVICE_ACCOUNT || '').trim();
+    if ((raw.startsWith("'") && raw.endsWith("'")) || (raw.startsWith('"') && raw.endsWith('"') && !raw.startsWith('{'))) {
+        raw = raw.slice(1, -1);
     }
+    if (!raw.startsWith('{')) {
+        raw = Buffer.from(raw, 'base64').toString('utf8');
+    }
+    serviceAccount = JSON.parse(raw);
+    serviceAccount.private_key = normalizePrivateKey(serviceAccount.private_key);
 } catch (e) {
-    console.error("❌ FIREBASE_SERVICE_ACCOUNT JSON hatası");
+    console.error("❌ FIREBASE_SERVICE_ACCOUNT JSON hatası:", e.message);
     process.exit(1);
 }
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
