@@ -2,12 +2,12 @@ const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const { Api } = require("telegram");
 
-// BURAYA ÖZ API MƏLUMATLARINIZI YAZIN (my.telegram.org saytından götürün)
-const apiId = 12345678; // Rəqəm olmalıdır (dırnaq işarəsi olmadan)
-const apiHash = "0123456789abcdef0123456789abcdef"; // 32 simvollu hərf-rəqəm
+// .env faylından birbaşa oxunması təmin edildi (xəta aradan qalxır)
+const apiId = parseInt(process.env.API_ID, 10);
+const apiHash = String(process.env.API_HASH || "").trim();
 
 if (!apiId || isNaN(apiId) || apiId === 0) {
-    console.error('❌ API_ID hatalıdır! my.telegram.org saytından düzgün rəqəmi götürün.');
+    console.error('❌ API_ID hatalıdır! .env faylını yoxlayın.');
 }
 if (!apiHash || apiHash.length !== 32) {
     console.error('❌ API_HASH hatalıdır! 32 simvollu olmalıdır.');
@@ -22,7 +22,6 @@ async function startUserbotLogin(phoneNumber) {
 
     const client = new TelegramClient(new StringSession(""), apiId, apiHash, { connectionRetries: 5 });
     await client.connect();
-    // GramJS-də sendCode çağırışı zamanı apiId və apiHash-ın düzgün ötürüldüyünə əmin olun
     const { phoneCodeHash } = await client.sendCode({ apiId, apiHash }, phoneNumber);
     pendingClients.set(phoneNumber, client);
 
@@ -109,7 +108,7 @@ async function sendAdToGroups(sessionString, groupIds, ad) {
         }
     } finally {
         try { await client.disconnect(); } catch (e) {}
-    }
+-   }
     return results;
 }
 
