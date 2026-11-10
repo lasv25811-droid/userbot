@@ -2,7 +2,6 @@ const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const { Api } = require("telegram");
 
-// .env faylından birbaşa oxunması təmin edildi (xəta aradan qalxır)
 const apiId = parseInt(process.env.API_ID, 10);
 const apiHash = String(process.env.API_HASH || "").trim();
 
@@ -108,7 +107,7 @@ async function sendAdToGroups(sessionString, groupIds, ad) {
         }
     } finally {
         try { await client.disconnect(); } catch (e) {}
--   }
+    }
     return results;
 }
 
