@@ -46,8 +46,8 @@ async function tryInitAuth() {
 }
 
 async function doLogin() {
-    const usr = document.getElementById('admin-username').value;
-    const pwd = document.getElementById('admin-password').value;
+    const usr = document.getElementById('admin-username').value.trim();
+    const pwd = document.getElementById('admin-password').value.trim();
     const err = document.getElementById('login-error');
     err.textContent = '';
     try {
@@ -64,6 +64,18 @@ async function doLogin() {
         } else err.textContent = j.error || 'Kullanıcı adı veya şifre yanlış';
     } catch (e) { err.textContent = 'Bağlantı hatası'; }
 }
+
+// Tarayıcı otomatik doldurmasını engelle + Enter ile giriş
+(function () {
+    const u = document.getElementById('admin-username');
+    const p = document.getElementById('admin-password');
+    if (!u || !p) return;
+    let typed = false;
+    u.addEventListener('input', () => { typed = true; });
+    const reset = () => { if (!typed) u.value = 'admin555'; };
+    reset(); setTimeout(reset, 300); setTimeout(reset, 1000);
+    [u, p].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+})();
 
 function showPanel() {
     document.getElementById('login-screen').style.display = 'none';
