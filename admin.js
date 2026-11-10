@@ -46,6 +46,7 @@ async function tryInitAuth() {
 }
 
 async function doLogin() {
+    const usr = document.getElementById('admin-username').value;
     const pwd = document.getElementById('admin-password').value;
     const err = document.getElementById('login-error');
     err.textContent = '';
@@ -53,14 +54,14 @@ async function doLogin() {
         const r = await fetch('/api/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: pwd })
+            body: JSON.stringify({ username: usr, password: pwd })
         });
         const j = await r.json();
         if (j.token) {
             adminToken = j.token;
             localStorage.setItem('admin_token', adminToken);
             showPanel();
-        } else err.textContent = j.error || 'Şifre yanlış';
+        } else err.textContent = j.error || 'Kullanıcı adı veya şifre yanlış';
     } catch (e) { err.textContent = 'Bağlantı hatası'; }
 }
 

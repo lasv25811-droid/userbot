@@ -50,8 +50,25 @@ const ROOT = __dirname;
 });
 
 // ---------- Bot (TÜRKÇE) ----------
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+// Render uyuyup uyandığı için webhook kullanılır (polling çakışması/409 olmaz).
+const BASE_URL = (process.env.RENDER_EXTERNAL_URL || process.env.MINI_APP_URL || '').trim().replace(/\/+$/, '');
+const USE_WEBHOOK = !!BASE_URL && process.env.USE_POLLING !== '1';
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: !USE_WEBHOOK });
 bot.on('polling_error', (err) => console.error('Polling hatası:', err.message));
+bot.on('webhook_error', (err) => console.error('Webhook hatası:', err.message));
+
+const WEBHOOK_PATH = '/tg-' + crypto.createHash('sha256').update(String(process.env.BOT_TOKEN)).digest('hex').slice(0, 32);
+if (USE_WEBHOOK) {
+    app.post(WEBHOOK_PATH, (req, res) => {
+        try { bot.processUpdate(req.body); } catch (e) { console.error('processUpdate:', e.message); }
+        res.sendStatus(200);
+    });
+    bot.setWebHook(BASE_URL + WEBHOOK_PATH)
+        .then(() => console.log('🤖 Webhook ayarlandı:', BASE_URL + '/tg-***'))
+        .catch(e => console.error('Webhook ayarlanamadı:', e.message));
+} else {
+    console.log('🤖 Bot polling modunda');
+}
 
 bot.onText(/\/start/, (msg) => {
     const url = (process.env.MINI_APP_URL || '').trim();
@@ -92,15 +109,29 @@ function validateInitData(initData) {
 }
 function isAdminUser(u) { return u && u.id.toString() === (process.env.ADMIN_ID || '').trim(); }
 
-// ---------- Admin oturumları ----------
-const adminSessions = new Map();
+// ---------- Admin oturumları (stateless: Render yeniden başlasa da çıkış yapmaz) ----------
+const TOKEN_SECRET = crypto.createHash('sha256')
+    .update('admin-token|' + (process.env.ADMIN_PASSWORD || '') + '|' + (process.env.BOT_TOKEN || '')).digest();
+function makeAdminToken() {
+    const exp = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    const sig = crypto.createHmac('sha256', TOKEN_SECRET).update(String(exp)).digest('hex');
+    return exp + '.' + sig;
+}
+function verifyAdminToken(token) {
+    if (!token || typeof token !== 'string') return false;
+    const [exp, sig] = token.split('.');
+    if (!exp || !sig || Number(exp) < Date.now()) return false;
+    const calc = crypto.createHmac('sha256', TOKEN_SECRET).update(exp).digest('hex');
+    if (calc.length !== sig.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(calc), Buffer.from(sig));
+}
 
 function isAdminRequest(req) {
     const initData = req.body?.initData || req.query?.initData;
     const user = validateInitData(initData);
     if (isAdminUser(user)) return true;
     const token = req.headers['x-admin-token'] || req.body?.adminToken || req.query?.adminToken;
-    return token && adminSessions.has(token);
+    return verifyAdminToken(token);
 }
 const adminOnly = (handler) => async (req, res) => {
     if (!isAdminRequest(req)) return res.status(403).json({ error: 'Yetkisiz erişim' });
@@ -128,18 +159,17 @@ app.post('/api/auth', async (req, res) => {
 
 // ---------- Admin giriş ----------
 app.post('/api/admin/login', (req, res) => {
-    const { password } = req.body;
+    const { username, password } = req.body || {};
     const expected = (process.env.ADMIN_PASSWORD || '').trim();
+    const expectedUser = (process.env.ADMIN_USERNAME || 'admin555').trim().toLowerCase();
     if (!expected) {
         console.error('⚠️ ADMIN_PASSWORD .env dosyasında tanımlı değil! (dosya adı tam olarak ".env" olmalı)');
     }
-    if (!password || !expected || password.trim() !== expected) {
-        return res.status(401).json({ error: 'Şifre yanlış' });
+    if (!username || String(username).trim().toLowerCase() !== expectedUser ||
+        !password || !expected || String(password).trim() !== expected) {
+        return res.status(401).json({ error: 'Kullanıcı adı veya şifre yanlış' });
     }
-    const token = crypto.randomBytes(32).toString('hex');
-    adminSessions.set(token, { createdAt: Date.now() });
-    setTimeout(() => adminSessions.delete(token), 7 * 24 * 60 * 60 * 1000);
-    res.json({ token });
+    res.json({ token: makeAdminToken() });
 });
 
 // ---------- Userbot API ----------
@@ -346,7 +376,10 @@ async function sendAdForAccount(accountId, acc) {
     return { ok, bad, total: results.length };
 }
 
+let schedulerBusy = false;
 async function runScheduler() {
+    if (schedulerBusy) return;
+    schedulerBusy = true;
     try {
         const snap = await db.collection('accounts').where('isRunning', '==', true).get();
         const now = Date.now();
@@ -365,13 +398,30 @@ async function runScheduler() {
             }
         }
     } catch (e) { console.error('Scheduler hatası:', e.message); }
+    finally { schedulerBusy = false; }
 }
 
 setInterval(runScheduler, 60 * 1000); // her dakika
+setTimeout(runScheduler, 5000);       // uyanır uyanmaz hemen kontrol et
 console.log('⏰ Scheduler aktif (60sn)');
 
 // ---------- Ping ----------
-app.get('/ping', (req, res) => res.send('Alive'));
+// cron-job.org her 10 dk bu adresi çağırır: sunucuyu uyandırır + zamanlayıcıyı tetikler
+app.get('/ping', (req, res) => {
+    res.send('Alive');
+    runScheduler();
+});
+app.head('/ping', (req, res) => res.sendStatus(200));
+
+// Yedek: kendi kendine ping (cron çalışmasa bile uyanık kalmaya yardım eder)
+if (BASE_URL && typeof fetch === 'function') {
+    setInterval(() => { fetch(BASE_URL + '/ping').catch(() => {}); }, 9 * 60 * 1000);
+}
+
+// Beklenmeyen hatalarda sunucu çökmesin
+process.on('unhandledRejection', (e) => console.error('unhandledRejection:', e?.message || e));
+process.on('uncaughtException', (e) => console.error('uncaughtException:', e?.message || e));
+
 app.get('*', (req, res) => res.sendFile(path.join(ROOT, 'index.html')));
 
 const PORT = process.env.PORT || 3000;
