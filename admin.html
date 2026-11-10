@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin Panel — Reklam Yönetimi</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <!-- Giriş ekranı (browser'da açılırsa) -->
+    <!-- Giriş ekranı -->
     <div id="login-screen" class="login-screen" style="display:none;">
         <div class="login-box">
             <h1>🔐 Yönetici Girişi</h1>
-            <input type="text" id="admin-username" name="panel_user" placeholder="Kullanıcı adı" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="123456789">
-            <input type="password" id="admin-password" name="panel_pass" placeholder="Yönetici şifresi" autocomplete="off">
+            <input type="text" id="admin-username" placeholder="Kullanıcı adı" value="123456789">
+            <input type="password" id="admin-password" placeholder="Yönetici şifresi">
             <label style="display:flex;gap:8px;align-items:center;margin:8px 0;font-size:14px;"><input type="checkbox" id="show-pass" style="width:auto;margin:0;"> Şifrəni göstər</label>
             <button onclick="doLogin()">Giriş Yap</button>
             <div id="login-error" class="error"></div>
@@ -47,6 +48,10 @@
                     <div class="stat-card red"><div class="stat-num" id="ov-fail">0</div><div class="stat-lbl">Başarısız</div></div>
                 </div>
 
+                <div class="chart-container" style="position: relative; height:200px; margin:20px 0;">
+                    <canvas id="dashboard-chart"></canvas>
+                </div>
+
                 <div class="controls">
                     <button onclick="startAll()" class="btn-success">▶ Tümünü Başlat</button>
                     <button onclick="stopAll()" class="btn-danger">⏸ Tümünü Durdur</button>
@@ -56,6 +61,10 @@
             <!-- USERS -->
             <section id="tab-users" class="tab-content">
                 <h2>Kullanıcılar ve Hesaplar</h2>
+                <div class="controls" style="margin-bottom:12px;">
+                    <button onclick="bulkStartSelected()" class="btn-success">▶ Seçili Hesapları Başlat</button>
+                    <button onclick="bulkStopSelected()" class="btn-danger">⏸ Seçili Hesapları Durdur</button>
+                </div>
                 <div id="users-list"></div>
             </section>
 
@@ -89,7 +98,7 @@
         </main>
     </div>
 
-    <!-- Modal (hesap detayı) -->
+    <!-- Modal -->
     <div id="modal" class="modal" style="display:none;">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">✕</button>

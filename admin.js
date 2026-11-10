@@ -24,9 +24,7 @@ function api(path, body = {}) {
     });
 }
 
-// ---------- Giriş ----------
 async function tryInitAuth() {
-    // Telegram içinden geldiyse initData ile dene
     try {
         const r = await fetch('/api/auth', {
             method: 'POST',
@@ -35,7 +33,6 @@ async function tryInitAuth() {
         }).then(x => x.json());
         if (r.isAdmin) { showPanel(); return true; }
     } catch (e) {}
-    // Token varsa dene
     if (adminToken) {
         try {
             await api('/api/admin/users');
@@ -65,7 +62,6 @@ async function doLogin() {
     } catch (e) { err.textContent = 'Bağlantı hatası'; }
 }
 
-// Tarayıcı otomatik doldurmasını engelle + Enter ile giriş
 (function () {
     const u = document.getElementById('admin-username');
     const p = document.getElementById('admin-password');
@@ -91,7 +87,6 @@ function logout() {
     location.reload();
 }
 
-// ---------- Tabs ----------
 document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', () => showTab(t.dataset.tab));
 });
@@ -104,7 +99,6 @@ function showTab(name) {
     if (name === 'stats') loadStats();
 }
 
-// ---------- Yükleme ----------
 async function loadAll() {
     await loadDashboard();
     await loadUsers();
@@ -130,6 +124,24 @@ async function loadDashboard() {
         document.getElementById('ov-total').textContent = total;
         document.getElementById('ov-success').textContent = success;
         document.getElementById('ov-fail').textContent = fail;
+
+        // Dashboard grafiği
+        const ctx = document.getElementById('dashboard-chart');
+        if (ctx) {
+            if (window.dashboardChart) window.dashboardChart.destroy();
+            window.dashboardChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Toplam', 'Başarılı', 'Başarısız'],
+                    datasets: [{
+                        label: 'Gönderim İstatistikleri',
+                        data: [total, success, fail],
+                        backgroundColor: ['#0088cc', '#4ade80', '#f87171']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
     } catch (e) { showMsg('Hata: ' + e.message); }
 }
 
@@ -162,7 +174,10 @@ function renderUser(u) {
 function renderAccount(a) {
     return `<div class="account-item ${a.isRunning ? '' : 'off'}">
         <div class="account-row">
-            <span class="account-phone">📱 ${esc(a.phone)}</span>
+            <span class="acc-sel">
+                <input type="checkbox" class="acc-checkbox" value="${a.id}" onchange="updateBulkSelection()">
+                <span class="account-phone">📱 ${esc(a.phone)}</span>
+            </span>
             <span class="badge-status ${a.isRunning ? 'on' : 'off'}">${a.isRunning ? 'Çalışıyor' : 'Durdu'}</span>
         </div>
         <div class="user-sub">
@@ -208,12 +223,31 @@ async function stopAll() {
     });
 }
 
+async function bulkStartSelected() {
+    const ids = Array.from(document.querySelectorAll('.acc-checkbox:checked')).map(cb => cb.value);
+    if (!ids.length) { showMsg('Lütfen en az bir hesap seçin'); return; }
+    try {
+        await api('/api/admin/accounts/bulk', { accountIds: ids, action: 'start' });
+        loadUsers(); loadDashboard();
+        showMsg('Seçili hesaplar başlatıldı');
+    } catch (e) { showMsg('Hata: ' + e.message); }
+}
+
+async function bulkStopSelected() {
+    const ids = Array.from(document.querySelectorAll('.acc-checkbox:checked')).map(cb => cb.value);
+    if (!ids.length) { showMsg('Lütfen en az bir hesap seçin'); return; }
+    try {
+        await api('/api/admin/accounts/bulk', { accountIds: ids, action: 'stop' });
+        loadUsers(); loadDashboard();
+        showMsg('Seçili hesaplar durduruldu');
+    } catch (e) { showMsg('Hata: ' + e.message); }
+}
+
 async function sendNow(id) {
     try { const r = await api(`/api/admin/account/${id}/send-now`); showMsg(`Gönderildi: ${r.result.ok} ✅ / ${r.result.bad} ❌`); loadStats(); loadDashboard(); }
     catch (e) { showMsg('Hata: ' + e.message); }
 }
 
-// ---------- Hesap ayarları ----------
 function findAccount(id) {
     for (const u of currentData.users) {
         const a = (u.accounts || []).find(x => x.id === id);
@@ -293,7 +327,6 @@ async function saveGroups(id) {
     } catch (e) { showMsg('Hata: ' + e.message); }
 }
 
-// ---------- Ads ----------
 async function loadAds() {
     try {
         const { ads } = await api('/api/admin/ads/list');
@@ -348,7 +381,6 @@ async function deleteAd(id) {
     });
 }
 
-// ---------- Stats ----------
 async function loadStats() {
     try {
         const { users } = await api('/api/admin/users');
@@ -387,14 +419,11 @@ async function loadStats() {
     } catch (e) { showMsg('Hata: ' + e.message); }
 }
 
-// ---------- Modal ----------
 function openModal() { document.getElementById('modal').style.display = 'flex'; }
 function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-// ---------- Helpers ----------
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-// ---------- Init ----------
 (async () => {
     const ok = await tryInitAuth();
     if (!ok) document.getElementById('login-screen').style.display = 'flex';

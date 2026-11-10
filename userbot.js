@@ -5,6 +5,11 @@ require('dotenv').config();
 
 const apiId = parseInt(String(process.env.API_ID || '').trim().replace(/["']/g, ''));
 const apiHash = String(process.env.API_HASH || '').trim().replace(/["']/g, '');
+
+if (!apiId || !apiHash || apiHash.length !== 32) {
+    console.error('❌ API_ID və ya API_HASH hatalıdır! my.telegram.org saytından düzgün dəyərləri götürün və .env faylına yazın.');
+}
+
 console.log(`🔑 API_ID: ${apiId} · API_HASH uzunluğu: ${apiHash.length} (32 olmalı)`);
 const pendingClients = new Map();
 
@@ -29,7 +34,7 @@ async function startUserbotLogin(phoneNumber) {
 
 async function verifyUserbotCode(phoneNumber, code, phoneCodeHash, password) {
     const client = pendingClients.get(phoneNumber);
-    if (!client) throw new Error("Oturum bulunamadı. Yeniden 'Kod Gönder' basın.");
+    if (!client) throw new Error("Oturum tapılmadı. Yenidən 'Kod Göndər' düyməsinə basın.");
 
     try {
         if (password) {
@@ -48,17 +53,16 @@ async function verifyUserbotCode(phoneNumber, code, phoneCodeHash, password) {
         return session;
     } catch (e) {
         if (e.errorMessage === 'SESSION_PASSWORD_NEEDED') {
-            const err = new Error("İki adımlı doğrulama (2FA) şifresi gerekli.");
+            const err = new Error("İki addımlı doğrulama (2FA) şifrəsi tələb olunur.");
             err.needPassword = true;
             throw err;
         }
-        if (e.errorMessage === 'PHONE_CODE_EXPIRED') throw new Error("Kodun süresi doldu.");
-        if (e.errorMessage === 'PHONE_CODE_INVALID') throw new Error("Kod yanlış.");
-        throw new Error(e.errorMessage || e.message || "Hata");
+        if (e.errorMessage === 'PHONE_CODE_EXPIRED') throw new Error("Kodun vaxtı bitib.");
+        if (e.errorMessage === 'PHONE_CODE_INVALID') throw new Error("Kod yanlışdır.");
+        throw new Error(e.errorMessage || e.message || "Xəta");
     }
 }
 
-// Grupları çek
 async function fetchGroups(sessionString) {
     const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, { connectionRetries: 3 });
     await client.connect();
@@ -77,7 +81,6 @@ async function fetchGroups(sessionString) {
     }
 }
 
-// Reklamı bir qrupa göndər
 async function sendAdToGroups(sessionString, groupIds, ad) {
     const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, { connectionRetries: 3 });
     await client.connect();
@@ -98,7 +101,6 @@ async function sendAdToGroups(sessionString, groupIds, ad) {
             } catch (e) {
                 results.push({ groupId: gid, success: false, error: e.message });
             }
-            // Anti-flood
             await new Promise(r => setTimeout(r, 1500 + Math.random() * 2500));
         }
     } finally {
