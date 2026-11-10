@@ -1,16 +1,19 @@
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const { Api } = require("telegram");
-require('dotenv').config();
 
-const apiId = parseInt(String(process.env.API_ID || '').trim().replace(/["']/g, ''));
-const apiHash = String(process.env.API_HASH || '').trim().replace(/["']/g, '');
+// BURAYA ÖZ API MƏLUMATLARINIZI YAZIN (my.telegram.org saytından götürün)
+const apiId = 12345678; // Rəqəm olmalıdır (dırnaq işarəsi olmadan)
+const apiHash = "0123456789abcdef0123456789abcdef"; // 32 simvollu hərf-rəqəm
 
-if (!apiId || !apiHash || apiHash.length !== 32) {
-    console.error('❌ API_ID və ya API_HASH hatalıdır! my.telegram.org saytından düzgün dəyərləri götürün və .env faylına yazın.');
+if (!apiId || isNaN(apiId) || apiId === 0) {
+    console.error('❌ API_ID hatalıdır! my.telegram.org saytından düzgün rəqəmi götürün.');
 }
-
+if (!apiHash || apiHash.length !== 32) {
+    console.error('❌ API_HASH hatalıdır! 32 simvollu olmalıdır.');
+}
 console.log(`🔑 API_ID: ${apiId} · API_HASH uzunluğu: ${apiHash.length} (32 olmalı)`);
+
 const pendingClients = new Map();
 
 async function startUserbotLogin(phoneNumber) {
@@ -19,6 +22,7 @@ async function startUserbotLogin(phoneNumber) {
 
     const client = new TelegramClient(new StringSession(""), apiId, apiHash, { connectionRetries: 5 });
     await client.connect();
+    // GramJS-də sendCode çağırışı zamanı apiId və apiHash-ın düzgün ötürüldüyünə əmin olun
     const { phoneCodeHash } = await client.sendCode({ apiId, apiHash }, phoneNumber);
     pendingClients.set(phoneNumber, client);
 
