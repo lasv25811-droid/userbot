@@ -3,8 +3,9 @@ const { StringSession } = require("telegram/sessions");
 const { Api } = require("telegram");
 require('dotenv').config();
 
-const apiId = parseInt(process.env.API_ID);
-const apiHash = process.env.API_HASH;
+const apiId = parseInt(String(process.env.API_ID || '').trim().replace(/["']/g, ''));
+const apiHash = String(process.env.API_HASH || '').trim().replace(/["']/g, '');
+console.log(`🔑 API_ID: ${apiId} · API_HASH uzunluğu: ${apiHash.length} (32 olmalı)`);
 const pendingClients = new Map();
 
 async function startUserbotLogin(phoneNumber) {

@@ -174,3 +174,14 @@ button:active { transform: translateY(1px); }
 
 /* Empty state */
 .empty { text-align: center; padding: 30px; color: #6b7280; font-size: 14px; }
+
+/* --- Eklemeler --- */
+.tabs { flex-wrap: wrap; }
+.acc-sel { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.acc-sel input { width: 18px; height: 18px; }
+.mini-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.mini-card { background: #0f0f15; border: 1px solid #2a2a35; border-radius: 10px; padding: 10px 6px; text-align: center; }
+.mini-card .n { font-size: 18px; font-weight: 700; color: #fff; }
+.mini-card .l { font-size: 10px; color: #6b7280; text-transform: uppercase; }
+.mini-card .s { font-size: 10px; margin-top: 3px; color: #9ca3af; }
+.link-box { word-break: break-all; font-size: 12px; color: #38bdf8; background: #0f0f15; padding: 8px; border-radius: 8px; margin: 8px 0; }
