@@ -72,7 +72,7 @@ async function doLogin() {
     if (!u || !p) return;
     let typed = false;
     u.addEventListener('input', () => { typed = true; });
-    const reset = () => { if (!typed) u.value = 'admin555'; };
+    const reset = () => { if (!typed) u.value = '123456789'; };
     reset(); setTimeout(reset, 300); setTimeout(reset, 1000);
     [u, p].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
 })();

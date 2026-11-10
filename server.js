@@ -161,13 +161,18 @@ app.post('/api/auth', async (req, res) => {
 app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body || {};
     const expected = (process.env.ADMIN_PASSWORD || '').trim();
-    const expectedUser = (process.env.ADMIN_USERNAME || 'admin555').trim().toLowerCase();
+    const expectedUser = (process.env.ADMIN_USERNAME || '123456789').trim().toLowerCase();
     if (!expected) {
         console.error('⚠️ ADMIN_PASSWORD .env dosyasında tanımlı değil! (dosya adı tam olarak ".env" olmalı)');
     }
-    if (!username || String(username).trim().toLowerCase() !== expectedUser ||
-        !password || !expected || String(password).trim() !== expected) {
-        return res.status(401).json({ error: 'Kullanıcı adı veya şifre yanlış' });
+    if (!username || String(username).trim().toLowerCase() !== expectedUser) {
+        return res.status(401).json({ error: 'Kullanıcı adı yanlış' });
+    }
+    if (!expected) {
+        return res.status(500).json({ error: 'ADMIN_PASSWORD Render Environment-də təyin edilməyib' });
+    }
+    if (!password || String(password).trim() !== expected) {
+        return res.status(401).json({ error: 'Şifre yanlış' });
     }
     res.json({ token: makeAdminToken() });
 });
