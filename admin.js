@@ -74,6 +74,8 @@ async function doLogin() {
     u.addEventListener('input', () => { typed = true; });
     const reset = () => { if (!typed) u.value = '123456789'; };
     reset(); setTimeout(reset, 300); setTimeout(reset, 1000);
+    const sp = document.getElementById('show-pass');
+    if (sp) sp.addEventListener('change', () => { p.type = sp.checked ? 'text' : 'password'; });
     [u, p].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
 })();
 

@@ -160,8 +160,9 @@ app.post('/api/auth', async (req, res) => {
 // ---------- Admin giriş ----------
 app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body || {};
-    const expected = (process.env.ADMIN_PASSWORD || '').trim();
-    const expectedUser = (process.env.ADMIN_USERNAME || '123456789').trim().toLowerCase();
+    const stripQ = (v) => String(v || '').trim().replace(/^["']+|["']+$/g, '').trim();
+    const expected = stripQ(process.env.ADMIN_PASSWORD);
+    const expectedUser = stripQ(process.env.ADMIN_USERNAME || '123456789').toLowerCase();
     if (!expected) {
         console.error('⚠️ ADMIN_PASSWORD .env dosyasında tanımlı değil! (dosya adı tam olarak ".env" olmalı)');
     }
@@ -171,8 +172,9 @@ app.post('/api/admin/login', (req, res) => {
     if (!expected) {
         return res.status(500).json({ error: 'ADMIN_PASSWORD Render Environment-də təyin edilməyib' });
     }
-    if (!password || String(password).trim() !== expected) {
-        return res.status(401).json({ error: 'Şifre yanlış' });
+    if (!password || stripQ(password) !== expected) {
+        // GEÇİCİ teşhis: uzunlukları göster (giriş çalışınca bu satırı silebilirsiniz)
+        return res.status(401).json({ error: 'Şifre yanlış (yazdığınız: ' + stripQ(password).length + ' simvol, serverdə: ' + expected.length + ' simvol)' });
     }
     res.json({ token: makeAdminToken() });
 });
